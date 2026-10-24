@@ -1,11 +1,8 @@
-# Środowiska wirtualne
 .venv/
 venv/
 env/
 
-# Pamięć podręczna Pythona (pliki skompilowanego bytecode'u)
 __pycache__/
 *.py[cod]
 
-# Konfiguracje lokalne edytora (opcjonalnie)
 .vscode/
