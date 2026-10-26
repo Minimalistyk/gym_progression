@@ -139,60 +139,43 @@ Przepływ modułu wprowadzania danych (`ingest`):
 
 ## 5. Stan Aktualny Implementacji (Changelog)
 
-* \[x\] Utworzone repozytorium, środowisko `.venv` i `requirements.txt`.
-
-* \[x\] Skonfigurowany linter `ruff`.
-
-* \[x\] Pełny silnik wprowadzania danych (Faza 1):
-
-  * Dynamiczne tworzenie folderu `spreadsheets/` i pliku `workouts.csv`.
-
+* [x] Utworzone repozytorium, środowisko `.venv` i `requirements.txt`.
+* [x] Skonfigurowany linter `ruff`.
+* [x] Pełny silnik wprowadzania danych (Faza 1):
+  * Dynamiczne tworzenie folderu `spreadsheets/` i pliku `workouts.csv` oparte o `pathlib.Path`.
   * Obsługa daty (domyślnie dzisiaj lub z ręki).
-
   * Zbieranie diety i masy ciała z obsługą wartości pustych.
-
   * Wybór ćwiczeń po numerach (`enumerate`) w siatce 3-kolumnowej.
-
   * Zbieranie serii po spacji (`10 10 9`).
-
   * Formatowanie podsumowania (`show_screen`) i krok potwierdzenia (`Confirm? (y/n)`).
-
   * Płaski zapis atomowy w standardzie Tidy Data (1 wiersz = 1 seria).
-
-* \[!\] **Drobne poprawki techniczne do wykonania przed Fazą 2:**
-
-  * Przepięcie surowych konkatenacji ścieżek `os.path` na obiektowy standard `pathlib.Path`.
+* [x] Architektura modularna i Router CLI (Dawna Faza 3 — wykonana wcześniej):
+  * Wydzielenie potoku wprowadzania danych do niezależnego modułu `ingest.py`.
+  * Przebudowa `main.py` w czysty punkt startowy (Router).
+  * Implementacja menu w oparciu o wzorzec Dispatch Table ze szczelną pętlą walidacji i izolacją wywołań akcji.
 
 ## 6. Roadmapa Projektu (Kolejne Kroki)
 
 ### Faza 2: Silnik Podwójnej Progresji (Pandas Engine) — NASTĘPNY ETAP
 
-* \[ \] Wydzielenie kodu wprowadzania danych do `ingest.py`.
+* [ ] Utworzenie modułu `progression.py` operującego na pandasie:
+  * [ ] Wczytanie pliku `spreadsheets/workouts.csv` do `pd.DataFrame`.
+  * [ ] Zabezpieczenie przed brakiem pliku lub pustą bazą (np. gdy użytkownik uruchomi cel przed pierwszym treningiem).
+  * [ ] Filtrowanie po wybranym ćwiczeniu i wyznaczenie ostatniej daty (`df['date'].max()`).
+  * [ ] Obliczenie aktualnego potencjału siłowego sesji (szacowane 1RM ze wzoru Epleya na najcięższej serii).
+  * [ ] Implementacja reguły decyzyjnej podwójnej progresji (weryfikacja czy poprzedni cel powtórzeń został domknięty).
+  * [ ] Opcjonalne przeliczenie obciążenia pod nową docelową liczbę powtórzeń (gdy użytkownik zmienia zakres).
+  * [ ] Formatowanie i zwrot czytelnej rekomendacji przed treningiem.
+* [ ] Podpięcie akcji z `progression.py` pod opcję menu `Create workout` w `main.py`.
 
-* \[ \] Utworzenie modułu `progression.py` operującego na pandasie:
+### Faza 3: Metryki Pochodne i Wizualizacja (`analytics.py`)
 
-  * \[ \] Wczytanie pliku `workouts.csv` do `pd.DataFrame`.
+* [ ] Wyliczanie objętości sesji, szacowanego 1RM oraz stosunku ciężaru do masy ciała w pandasie w locie (in-memory).
+* [ ] Wykresy progresji w czasie (`matplotlib` / `seaborn`):
+  * Podział na ćwiczenia / partie mięśniowe (mapowanie kategorii ze słownika metadanych).
+  * Wizualizacja tła wykresu oznaczająca stan kaloryczny (surplus, maintenance, deficit).
+* [ ] Zapisywanie raportów graficznych do dedykowanego katalogu `reports/`.
 
-  * \[ \] Zabezpieczenie przed brakiem pliku lub pustą bazą.
+### Faza 4: Interfejs Prezentacyjny (Showcase na koło naukowe)
 
-  * \[ \] Filtrowanie po wybranym ćwiczeniu i wyznaczenie ostatniej daty (`df['date'].max()`).
-
-  * \[ \] Implementacja reguły decyzyjnej podwójnej progresji ($+\text{procentowy ale dospasowany do ciezarów dodatkowe kg}$ po zaliczeniu limitu powtórzeń).
-
-  * \[ \] Formatowanie odpowiedzi dla użytkownika przed wyjściem na trening.
-
-### Faza 3: Router CLI (`main.py`)
-
-* \[ \] Przebudowa `main.py` jako prostego menu startowego lub interfejsu z flagami (`argparse`):
-
-  * `python main.py` $\rightarrow$ wybór: `[1] Zaloguj trening`, `[2] Sprawdz cel na dzis`.
-
-  * Opcjonalnie CLI: `python main.py log` vs `python main.py next --exercise "Lawka plaska"`.
-
-### Faza 4: Metryki Pochodne i Wizualizacja
-
-* \[ \] Wyliczanie objętości, szacowanego 1RM oraz stosunku ciezaru do masy ciala w pandasie w locie.
-
-* \[ \] Skrypt generujący wykres liniowy progresji ciężaru i objętości w czasie zadanej listy ćwiczeń (lub cwiczenia zalezy co uzytnwik poda) z tłem oznaczajacym kolor diety oś x to czas a oś y to objętość/ciężar/ciezar do masy ciala (zalezy od uzytownika) a linie w również innych kolorach/punkatch z różnymi ksztaltami oznazjacymi roznwe cwiczenia (na jednym wykesie mozna zobaczyc wszystko i porownac czy progress byl na plaskiej i inncyh cyz tylko na przysiadzie itd).
-
-* \[ \] Zapisywanie wykresów do folderu `reports/` albo wysiwetlanie go uzytownikowi? aplikacja mobilna? internetowa?.
+* [ ] Zbudowanie interaktywnego dashboardu webowego w `streamlit` zasilanego plikiem `workouts.csv`.
