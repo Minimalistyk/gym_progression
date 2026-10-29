@@ -1,6 +1,7 @@
 import datetime as dt
 
 TODAY_DATE = dt.date.today()
+
 EXERCISES_LIST = [
     "Przysiad ze sztanga",
     "Lawka plaska",
@@ -59,14 +60,14 @@ def get_data():
 def get_workout_date():
     while True:
         try:
-            date_input = input("Podaj date (YYYY-MM-DD/pusty=dzis): ")
+            date_input = input("Podaj date (DD-MM-YYYY/pusty=dzis): ")
             if not date_input:
                 date_input = TODAY_DATE
                 return date_input
-            date_input = dt.datetime.strptime(date_input, "%Y-%m-%d").date()
+            date_input = dt.datetime.strptime(date_input, "%d-%m-%Y").date()
             return date_input
         except ValueError:
-            print("Wpisz date poprawnie!")
+            print("Invalid date!")
 
 def get_recent_diet():
     diet_translation = {
@@ -76,7 +77,7 @@ def get_recent_diet():
                         "u": "unknow"
                         }
     while True:
-        diet_input = input("Podaj typ diety przez ostatnie 3 dni. \nsurplus/maintenance/deficit/unknow: ")
+        diet_input = input("Input your today's diet type. \nsurplus/maintenance/deficit/unknow: ")
         #sprawdzamy czy zostalo cokowiek podane i sprawdzamy ierwsza litere
         if not diet_input:
             return diet_translation["u"]
@@ -98,12 +99,15 @@ def get_bodyweight():
 
 def get_exercises_list():
     while True:
+        today_exercises_list = [] #jakby error byl w locie to tworzymy pusta liste na poczatku
+        for i, item in enumerate(EXERCISES_LIST):
+            if i%3==0:
+                print("\n")
+            if i>=9:
+                print(f"{i+1}. {item:<30}", end="   ")
+            else:#z nieznanego mi powodu bez tego printuje sie to troche nie równo xD
+                print(f"{i+1}. {item:<31}", end="   ")
         try:
-            today_exercises_list = [] #jakby error byl w locie to tworzymy pusta liste na poczatku
-            for i, item in enumerate(EXERCISES_LIST):
-                if (i+3)%3==0:#pokazujemy cwiczeania rzedami po 3
-                    print("\n", end="")
-                print(f"{i+1}. {item}", end="   ")
             today_exercises_input = input("\n\nPodaj numer/y ćwiczeń: ").split() #lista stringów z numerami cwiczen
             for exercise in today_exercises_input:
                 today_exercises_list.append(EXERCISES_LIST[int(exercise)-1])
@@ -130,8 +134,11 @@ def get_exercises_data(exercises_list = None):
         exercises_data[item] = temp_exercise_dict
     return exercises_data
 
-def save_data_to_csv(path = r"\spreadsheets\workouts.csv", my_data = None):
-    with open(path, mode="a") as f:
+def save_data_to_csv(path = None, my_data = None):
+    if not path:
+        print("save_data_to_csv nie otrzymal sciezki")
+        return
+    with open(path, mode="a", encoding="utf-8") as f:
         for exercise_name, details in my_data["exercises"].items():
             for set_number, rep in enumerate(details["reps"]):
                 line = f"{my_data["date"]},{my_data["diet"]},{my_data["bodyweight"]},{exercise_name},{int(set_number)+1},{int(rep)},{details["weight"]}\n"

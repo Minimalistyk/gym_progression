@@ -1,181 +1,107 @@
-# GymProgression CLI — Stan Projektu, Architektura i Kontekst
+# GymProgression CLI — Stan Projektu, Architektura i Kontekst Dydaktyczny
 
 > **Instrukcja dla asystenta AI / mentora w nowym oknie czatu:**
 >
-> Działasz jako Senior Data Engineer i mentor programowania. Użytkownik uczy się Pythona pod kątem inżynierii danych poprzez budowę realnego narzędzia, a nie bierne oglądanie kursów.
+> Działasz jako wyrozumiały, ale technicznie konkretny Senior Data Engineer i osobisty mentor programowania. 
+> Użytkownik studiuje informatykę (profil programistyczny) i uczy się Pythona, Pandasa oraz Matplotliba poprzez budowę własnego narzędzia CLI do analizy treningu siłowego.
 >
-> **ZASADA KRYTYCZNA:** Pod żadnym pozorem **nie podawaj gotowego kodu** bez wyraźnej, bezpośredniej prośby użytkownika. Twoim zadaniem jest robić Code Review, wskazywać błędy architektoniczne, pytać o decyzje inżynierskie i naprowadzać na właściwe biblioteki wbudowane oraz idiomy Pythona.
+> **ZASADY BEZWZGLĘDNE DLA ASYSTENTA:**
+> 1. **ZAKAZ VIBE CODINGU I GENEROWANIA GOTOWCÓW:** Pod żadnym pozorem nie generuj gotowych bloków kodu z rozwiązaniami całych funkcji wizualizacji, dopóki użytkownik sam nie dojdzie do rozwiązania.
+> 2. **NAUKA PRZED POSTĘPEM (ETAP 4 — WIZUALIZACJA):** Użytkownik dawno nie korzystał z `matplotlib`. **NIE przechodź od razu do pisania docelowej funkcji `generate_plot`**. Zacznij od zwięzłego przypomnienia podejścia obiektowego (`fig`, `ax`) oraz daj użytkownikowi 1–2 małe, izolowane mini-zadania/drille do przetestowania w pliku testowym na syntetycznym zbiorze.
+> 3. **MIKRO-KROKI I SOKRATEJSKIE PYTANIA:** Rozbijaj budowę wykresu na elementarne części: inicjalizacja płótna `Figure`/`Axes`, rysowanie pojedynczej serii `ax.plot()`, iteracja po grupach ćwiczeń, formatowanie dat na osi X, nakładanie tła diety (`axvspan`). Pytaj o zrozumienie i zmuszaj do wnioskowania.
+> 4. **TESTOWANIE W LOCIE:** Wszelkie próby z biblioteką Matplotlib użytkownik wykonuje w izolowanym bloku testowym na syntetycznym pliku `workoutsTEST.csv`.
+> 5. **CODE REVIEW:** Weryfikuj poprawność stylów Matplotliba i spójność kontraktów danych między modułami.
+
+---
 
 ## 1. Koncepcja i Cele Projektu
 
-### Cel Użytkownika (Wartość w życiu prywatnym)
-
-* **Eliminacja zgadywania na treningu:** Program podaje dokładny cel na dziś (ciężar i powtórzenia) na podstawie reguły podwójnej progresji (*double progression*).
-
-* **Zatrzymanie niszczenia historii:** Przejście z notatnika (gdzie stare wyniki były nadpisywane) na model *Append-Only Log* (dane historyczne są nienaruszalne).
-
-* **Zrozumienie wpływu diety i masy ciała na siłę:** Analiza korelacji między stanem kalorycznym (deficyt, masa, utrzymanie), wahaniami wagi a tempem progresji.
-
-* **Analiza trendów i wykrywanie plateau:** Docelowe generowanie wykresów objętości treningowej, grup mięśniowych i szacowanego 1RM w czasie.
-
-### Cel Inżynierski (Wartość w karierze / Data Engineering)
-
-* **Higiena środowiska:** Praca w odizolowanym `.venv`, zarządzanie zależnościami przez `requirements.txt`, linter i formatowanie przez `ruff`.
-
-* **Projektowanie odpornych potoków wejściowych (Data Ingestion):** Walidacja typów (`try...except`), menu z indeksowaniem (`enumerate`), obsługa ścieżek i folderów.
-
-* **Format Tidy Data (First Normal Form):** Model zapisu 1 wiersz = 1 seria, umożliwiający wektorowe kalkulacje w pandasie bez parsowania tekstu.
-
-* **Zasada SSOT (Single Source of Truth):** Rozdzielenie surowych faktów od metryk pochodnych (wyliczanych w locie).
-
-* **Architektura modularna CLI:** Przejście z monolitycznego skryptu do modułów o pojedynczej odpowiedzialności (`ingest`, `progression`, `cli`).
-
-## 2. Model Danych (SSOT — Tidy Data)
-
-Plik docelowy: `spreadsheets/workouts.csv`
-
-Układ tabelaryczny: **Jeden wiersz reprezentuje dokładnie jedną wykonaną serię roboczą.**
-
-| Kolumna | Typ techniczny | Format / Wartości | Rola w systemie | 
-| ----- | ----- | ----- | ----- | 
-| `date` | `string (ISO)` | `YYYY-MM-DD` | Identyfikator chronologiczny sesji | 
-| `diet` | `string` | `surplus`, `maintenance`, `deficit`, `unknow` | Stan bilansu kalorycznego w ostatnich dniach | 
-| `bodyweight` | `float` | Liczba dziesiętna (kropka) / `nan` | Waga ciała zawodnika w dniu treningu | 
-| `exercise` | `string` | np. `Lawka plaska`, `Martwy ciag` | Klucz ćwiczenia (ujednolicone nazwy bez znaków PL) | 
-| `set_number` | `int` | `1`, `2`, `3` ... | Kolejny numer serii w ramach danego ćwiczenia | 
-| `reps` | `int` | Liczba całkowita | Zrealizowana liczba powtórzeń w tej serii | 
-| `weight` | `float` | Liczba dziesiętna (kropka) | Ciężar roboczy na sztandze / hantlu (kg) | 
-
-> **Zasada inżynierska:** Kolumny takie jak **Objętość serii** ($\text{weight} \times \text{reps}$) oraz **Objętość sesji / 1RM** **NIE SĄ ZAPISYWANE** w pliku. Wylicza je silnik analityczny w locie przy odczycie.
-
-## 3. Schemat Działania: Input (Zrealizowany)
-
-Przepływ modułu wprowadzania danych (`ingest`):
-
-1. **Pobranie kontekstu sesji (raz na start):**
-
-   * Data treningu (Enter = dzisiaj `date.today()`, opcjonalnie data historyczna `YYYY-MM-DD`).
-
-   * Dieta z ostatnich 3 dni (`s` / `m` / `d` / `u` $\rightarrow$ mapowana na pełne słowa).
-
-   * Waga ciała (float z zamianą przecinka na kropkę, opcjonalnie pusta $\rightarrow$ brak wagi).
-
-2. **Pętla wyboru ćwiczeń:**
-
-   * Wyświetlenie bazy ćwiczeń w 3 czytelnych kolumnach z numeracją (`enumerate`).
-
-   * Użytkownik podaje ciąg numerów po spacji (np. `2 4 10`).
-
-3. **Pobieranie wyników siłowych:**
-
-   * Dla każdego wybranego ćwiczenia użytkownik podaje powtórzenia w seriach po spacji (np. `10 10 9`).
-
-   * Użytkownik podaje ciężar roboczy (np. `62.5`).
-
-4. **Ekran weryfikacji wpisu (Confirmation Step):**
-
-   * Konsolowa karta `SUMMARY` z wyśrodkowanym nagłówkiem i sformatowanymi seriami.
-
-   * Pytanie `Confirm? (y/n)`.
-
-   * Po potwierdzeniu: atomowy zapis do pliku CSV (zagnieżdżona pętla rozwijająca serie do pojedynczych wierszy).
-
-## 4. Schemat Działania: Output (Analityka i Decyzje — Do Zrobienia)
-
-### Moduł A: Silnik Progresji (`progression.py`)
-
-* **Pytanie biznesowe:** *„Robię dzisiaj Ławkę płaską. Ile kg założyć i ile powtórzeń wykonać?”*
-
-* **Wejście:** Wybór ćwiczenia z listy.
-
-* **Logika potoku (Pandas):**
-
-  1. Wczytanie `workouts.csv` do DataFrame.
-
-  2. Odfiltrowanie wierszy dla wybranego ćwiczenia.
-
-  3. Wyciągnięcie rekordów z **ostatniej zarejestrowanej daty**.
-
-  4. Analiza powtórzeń w seriach roboczych (algorytm podwójnej progresji, np. widełki 10–12 powt.):
-
-     * Jeśli we wszystkich seriach osiągnięto górny limit (np. $\ge 12$ powtórzeń) $\rightarrow$ rekomendacja: **ciężar** $+2.5\text{ kg}$, cel: **10 powtórzeń**.
-
-     * Jeśli nie dobito do limitu (np. serie `12, 11, 9`) $\rightarrow$ rekomendacja: **ten sam ciężar**, cel: **dobicie do 12 powtórzeń**.
-
-     * Przypadek brzegowy: brak historii $\rightarrow$ prośba o podanie ciężaru bazowego.
-
-* **Wyjście w konsoli:**
-
-  ```
-  [OSTATNI TRENING: 2026-10-20]
-  Serie: 10, 10, 9 powtorzen | Ciezar: 60.0 kg | Dieta: deficit
-  ------------------------------------------------------------
-  CEL NA DZIS: 60.0 kg -> probuj osiagnac 3x12 powtorzen!
-  
-  ```
-
-### Moduł B: Moduł Analityczny i Raporty (`analytics.py`)
-
-* **Pytanie biznesowe:** *„Jak wygląda mój postęp siłowy i objętościowy w czasie w relacji do diety?”*
-
-* **Metryki liczone w locie:**
-
-  * $\text{Objętość serii} = \text{weight} \times \text{reps}$
-
-  * $\text{Objętość treningu} = \sum(\text{Objętość serii per data})$
-
-  * Szacowane $1\text{RM} = \text{weight} \times (1 + \frac{\text{reps}}{30})$ (wzór Epleya)
-
-* **Wizualizacja:** Zapisywanie wykresów PNG do folderu `reports/` przy użyciu `matplotlib` / `seaborn`.
-
-
-### Moduł C: Poprawki i drobne zmiany
-
-**Wyświetlanie listy ćwiczeń**
-
-1. Lista pokazuje sie w posortowanej postaci od najczęściej wybieranego ćwiczenia.
-
-2. Lista wypisuje ćwiczenia w takich samych odstępach i rónych kolumnach po 3 ćwiczenia na wiersz
-
-## 5. Stan Aktualny Implementacji (Changelog)
-
-* [x] Utworzone repozytorium, środowisko `.venv` i `requirements.txt`.
-* [x] Skonfigurowany linter `ruff`.
-* [x] Pełny silnik wprowadzania danych (Faza 1):
-  * Dynamiczne tworzenie folderu `spreadsheets/` i pliku `workouts.csv` oparte o `pathlib.Path`.
-  * Obsługa daty (domyślnie dzisiaj lub z ręki).
-  * Zbieranie diety i masy ciała z obsługą wartości pustych.
-  * Wybór ćwiczeń po numerach (`enumerate`) w siatce 3-kolumnowej.
-  * Zbieranie serii po spacji (`10 10 9`).
-  * Formatowanie podsumowania (`show_screen`) i krok potwierdzenia (`Confirm? (y/n)`).
-  * Płaski zapis atomowy w standardzie Tidy Data (1 wiersz = 1 seria).
-* [x] Architektura modularna i Router CLI (Dawna Faza 3 — wykonana wcześniej):
-  * Wydzielenie potoku wprowadzania danych do niezależnego modułu `ingest.py`.
-  * Przebudowa `main.py` w czysty punkt startowy (Router).
-  * Implementacja menu w oparciu o wzorzec Dispatch Table ze szczelną pętlą walidacji i izolacją wywołań akcji.
-
-## 6. Roadmapa Projektu (Kolejne Kroki)
-
-### Faza 2: Silnik Podwójnej Progresji (Pandas Engine) — NASTĘPNY ETAP
-
-* [ ] Utworzenie modułu `progression.py` operującego na pandasie:
-  * [ ] Wczytanie pliku `spreadsheets/workouts.csv` do `pd.DataFrame`.
-  * [ ] Zabezpieczenie przed brakiem pliku lub pustą bazą (np. gdy użytkownik uruchomi cel przed pierwszym treningiem).
-  * [ ] Filtrowanie po wybranym ćwiczeniu i wyznaczenie ostatniej daty (`df['date'].max()`).
-  * [ ] Obliczenie aktualnego potencjału siłowego sesji (szacowane 1RM ze wzoru Epleya na najcięższej serii).
-  * [ ] Implementacja reguły decyzyjnej podwójnej progresji (weryfikacja czy poprzedni cel powtórzeń został domknięty).
-  * [ ] Opcjonalne przeliczenie obciążenia pod nową docelową liczbę powtórzeń (gdy użytkownik zmienia zakres).
-  * [ ] Formatowanie i zwrot czytelnej rekomendacji przed treningiem.
-* [ ] Podpięcie akcji z `progression.py` pod opcję menu `Create workout` w `main.py`.
-
-### Faza 3: Metryki Pochodne i Wizualizacja (`analytics.py`)
-
-* [ ] Wyliczanie objętości sesji, szacowanego 1RM oraz stosunku ciężaru do masy ciała w pandasie w locie (in-memory).
-* [ ] Wykresy progresji w czasie (`matplotlib` / `seaborn`):
-  * Podział na ćwiczenia / partie mięśniowe (mapowanie kategorii ze słownika metadanych).
-  * Wizualizacja tła wykresu oznaczająca stan kaloryczny (surplus, maintenance, deficit).
-* [ ] Zapisywanie raportów graficznych do dedykowanego katalogu `reports/`.
-
-### Faza 4: Interfejs Prezentacyjny (Showcase na koło naukowe)
-
-* [ ] Zbudowanie interaktywnego dashboardu webowego w `streamlit` zasilanego plikiem `workouts.csv`.
+### Cel Użytkownika (Prywatny)
+* **Eliminacja zgadywania na treningu:** Wyznaczanie obciążeń na sesję na podstawie algorytmu podwójnej progresji (*double progression*).
+* **Nienaruszalna historia (Append-Only Log):** Rejestr surowych faktów w CSV bez modyfikacji starych sesji.
+* **Korelacja siły z dietą i wagą:** Analiza wpływu bilansu kalorycznego (`surplus`, `maintenance`, `deficit`) i masy ciała na dynamikę siły.
+
+### Cel Inżynierski (Data Engineering & Software Craftsmanship)
+* **Higiena środowiska:** Izolowane `.venv`, `requirements.txt` (w tym `pandas`, `numpy`, `matplotlib`).
+* **Standard Tidy Data (1NF):** Model danych: dokładnie 1 wiersz = 1 seria robocza.
+* **Zasada SSOT:** Rozdzielenie faktów od wyliczanych w locie metryk pochodnych.
+* **Czysty potok analityczny:** Modułowość (CLI Router -> Ingestion -> Pipeline ETL Pandas -> Wizualizacja Matplotlib -> Silnik Progresji).
+
+---
+
+## 2. Model Danych (SSOT — `spreadsheets/workouts.csv`)
+
+Układ tabelaryczny: **1 wiersz = 1 seria robocza**.
+
+| Kolumna | Typ w CSV | Typ docelowy w Pandas | Przykładowe wartości | Rola w systemie |
+| :--- | :--- | :--- | :--- | :--- |
+| `date` | `string (ISO)` | `datetime64[ns]` | `2026-10-28` | Chronologia sesji |
+| `diet` | `string` | `string / category` | `surplus`, `maintenance`, `deficit`, `unknow` | Bilans kaloryczny |
+| `bodyweight` | `float / puste` | `float64` (z `ffill().bfill()`) | `78.5`, `NaN` | Waga ciała |
+| `exercise` | `string` | `string` | `Lawka plaska`, `Martwy ciag` | Klucz ćwiczenia |
+| `set_number` | `int` | `int64` | `1`, `2`, `3` | Numer serii w ćwiczeniu |
+| `reps` | `int` | `int64` | `10`, `12` | Wykonane powtórzenia |
+| `weight` | `float` | `float64` | `60.0`, `102.5` | Ciężar roboczy w kg |
+
+---
+
+## 3. Stan Aktualny Implementacji (Changelog i Kod)
+
+### Moduł A: Wprowadzanie Danych (`ingest.py`) — STATUS: DZIAŁA
+* Dynamiczne ścieżki oparte o `pathlib.Path`.
+* Pętla wprowadzania daty (`%d-%m-%Y`), diety (`s/m/d/u`), wagi ciała.
+* Wybór ćwiczeń z 3-kolumnowej siatki (`enumerate`).
+* Zbieranie serii po spacji (`10 10 9`) i atomowy zapis Tidy Data do CSV w kodowaniu `utf-8`.
+
+### Moduł B: Router CLI (`main.py`) — STATUS: DZIAŁA
+* Menu główne oparte o Dispatch Table (`menu_actions`).
+* Zbieranie konfiguracji wykresu w `create_plot_config()`.
+* Zsynchronizowana lista `PLOT_TYPE` z nazwami metryk bazowych i modyfikatorów procentowych (`weight/bodyweight`).
+
+### Moduł C: Potok Analityczny (`data_eng.py`) — STATUS: ETAPY 1–3 UKOŃCZONE
+* Kompletny, wektorowy potok ETL:
+  * `get_raw_dataframe()` — odczyt CSV z parsowaniem kolumny `date` na typ `datetime`.
+  * `get_prepared_dataframe()` — chronologiczne sortowanie (`sort_values(ascending=True, ignore_index=True)`) oraz dwukierunkowa propagacja wagi (`ffill().bfill()`).
+  * `filter_by_exercise()`, `filter_by_period()`, `filter_by_diet()` — wektorowa filtracja.
+  * `add_metric_column()` — obliczanie metryk serii przez słownik strategii (`weight`, `weight/bodyweight`, `volume`).
+  * `aggregate_metrics()` — redukcja serii do jednego punktu dziennego per ćwiczenie i dieta (`groupby(["date", "exercise", "diet"])`) z użyciem `.max()` dla ciężarów i `.sum()` dla objętości.
+  * `calculate_progress()` — kalkulacja dynamiki procentowej względem sesji bazowej $T_0$ na bazie `.transform("first")` pogrupowanego po ćwiczeniu.
+* Środowisko: doinstalowany pakiet `matplotlib==3.11.2`, zamrożony w `requirements.txt`.
+* Środowisko testowe: utworzony syntetyczny zbiór `spreadsheets/workoutsTEST.csv` z wieloma sesjami, skokami ciężaru i brakami wagi do weryfikacji algorytmów.
+
+### Backlog i dług technologiczny do zaadresowania:
+1. **Rozbicie promptów CLI (UX Refactor):** W `main.py` funkcja `create_plot_config()` wywołuje bezpośrednio `get_recent_diet()` z `ingest.py`, która wyświetla prompt: *"Input your today's diet type"*. Należy rozdzielić wprowadzanie faktów treningowych od filtrowania analitycznego (dedykowana funkcja np. `select_diet_filter()` z komunikatem o filtrze historii).
+2. **Szybkie wybory (Quick Presets):** Dodanie w CLI gotowych skrótów dla częstych analiz (np. "Ostatnie 5 treningów", "Wszystkie ćwiczenia z dziś").
+3. **Konfiguracja celów treningowych (`user_config.json`):** Przygotowanie bazy pod Etap 5 — konfiguracja docelowych serii i zakresów powtórzeń (np. Ławka: 3 serie po 8–10 powtórzeń) w pliku konfiguracyjnym, z którego skorzysta silnik podwójnej progresji.
+
+---
+
+## 4. Dydaktyczna Roadmapa Edukacyjna
+
+### Etap 1: Solidne Podstawy Pandasa i Czyszczenie Danych — [UKOŃCZONE]
+* [x] Zrozumienie różnicy między `Series` a `DataFrame` oraz wektoryzacji.
+* [x] Obsługa braków wagi: implementacja i zrozumienie mechanizmów `.ffill()` i `.bfill()` w czasie.
+* [x] Wyeliminowanie `SettingWithCopyWarning` i unifikacja nazw kolumn.
+
+### Etap 2: Agregacja Danych (Zrozumienie `groupby`) — [UKOŃCZONE]
+* [x] Redukcja wielu serii z jednego dnia do pojedynczego punktu na wykres liniowy.
+* [x] Zrozumienie paradygmatu Split-Apply-Combine.
+* [x] Implementacja strategii agregacji: `.max()` dla obciążenia roboczego vs `.sum()` dla łącznej objętości sesji.
+
+### Etap 3: Indeksowanie i Matematyka Progresu Procentowego — [UKOŃCZONE]
+* [x] Normalizacja skali różnych ćwiczeń na wspólnym wykresie.
+* [x] Implementacja wzoru $\frac{V_t - V_0}{V_0} \times 100\%$ dla punktu bazowego $T_0$.
+* [x] Zrozumienie i wdrożenie metody `.transform("first")` z grupowaniem po ćwiczeniu.
+
+### Etap 4: Wizualizacja Danych (`matplotlib.pyplot`) — [AKTUALNY FOCUS]
+* [ ] **Mini-drille startowe:** Szybkie przypomnienie podejścia obiektowego (`fig, ax = plt.subplots()`), anatomii wykresu i metod konfiguracji osi (`ax.set_*`).
+* [ ] **Rysowanie serii wieloliniowych:** Pętla `for exercise, group_df in df.groupby("exercise"):` nanosząca linie na wspólny `ax`.
+* [ ] **Formatowanie:** Etykiety dat na osi X, dynamiczny tytuł i podpis osi Y (`kg` vs `%`), siatka pomocnicza (`grid`), czytelna legenda.
+* [ ] **Strefy diety w tle:** Zrozumienie i implementacja kolorowych pasów tła (`ax.axvspan`) odpowiadających fazom kalorycznym (`surplus`, `maintenance`, `deficit`).
+* [ ] **Eksport raportu:** Zapis wygenerowanego wykresu do pliku `reports/{timestamp}_{metric}.png` obok podglądu interaktywnego.
+
+### Etap 5: Silnik Progresji (`progression.py`) — [OCZEKUJE]
+* [ ] Wczytanie konfiguracji celów z `user_config.json`.
+* [ ] Odpytanie ostatniej sesji danego ćwiczenia (`df['date'].max()`).
+* [ ] Walidacja kryteriów podwójnej progresji (wszystkie serie w górnym limicie powtórzeń).
+* [ ] Formułowanie rekomendacji obciążenia na kolejną sesję.

@@ -1,6 +1,28 @@
 date,diet,bodyweight,exercise,set_number,reps,weight
-2026-10-26,unknow,,Przysiad ze sztanga,1,1,1.0
-2026-10-26,unknow,,Lawka plaska,1,2,2.0
-2026-10-26,unknow,,OHP,1,21,21.2
-2026-10-26,unknow,,Lawka plaska,1,2,152.0
-2026-10-26,unknow,,Lawka plaska,2,2,152.0
+2026-10-01,deficit,80.0,Lawka plaska,1,10,60.0
+2026-10-01,deficit,80.0,Lawka plaska,2,10,60.0
+2026-10-01,deficit,80.0,Lawka plaska,3,10,60.0
+2026-10-01,deficit,80.0,Wznosy bokiem,1,12,10.0
+2026-10-01,deficit,80.0,Wznosy bokiem,2,12,10.0
+2026-10-01,deficit,80.0,Wznosy bokiem,3,12,10.0
+2026-10-05,deficit,,Lawka plaska,1,10,62.5
+2026-10-05,deficit,,Lawka plaska,2,9,62.5
+2026-10-05,deficit,,Lawka plaska,3,8,62.5
+2026-10-10,maintenance,79.5,Lawka plaska,1,8,65.0
+2026-10-10,maintenance,79.5,Lawka plaska,2,8,65.0
+2026-10-10,maintenance,79.5,Lawka plaska,3,8,65.0
+2026-10-10,maintenance,79.5,Wznosy bokiem,1,12,12.0
+2026-10-10,maintenance,79.5,Wznosy bokiem,2,10,12.0
+2026-10-10,maintenance,79.5,Wznosy bokiem,3,10,12.0
+2026-10-15,maintenance,,Przysiad ze sztanga,1,5,100.0
+2026-10-15,maintenance,,Przysiad ze sztanga,2,5,100.0
+2026-10-15,maintenance,,Przysiad ze sztanga,3,5,100.0
+2026-10-20,surplus,81.0,Lawka plaska,1,6,70.0
+2026-10-20,surplus,81.0,Lawka plaska,2,6,70.0
+2026-10-20,surplus,81.0,Lawka plaska,3,6,70.0
+2026-10-20,surplus,81.0,Wznosy bokiem,1,10,14.0
+2026-10-20,surplus,81.0,Wznosy bokiem,2,10,14.0
+2026-10-20,surplus,81.0,Wznosy bokiem,3,10,14.0
+2026-10-20,surplus,81.0,Przysiad ze sztanga,1,5,110.0
+2026-10-20,surplus,81.0,Przysiad ze sztanga,2,5,110.0
+2026-10-20,surplus,81.0,Przysiad ze sztanga,3,5,110.0

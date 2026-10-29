@@ -1,6 +1,10 @@
+date,diet,bodyweight,exercise,set_number,reps,weight
 2026-10-25,maintenance,77.0,Lawka plaska,1,9,62.5
 2026-10-25,maintenance,77.0,Lawka plaska,2,8,62.5
 2026-10-25,maintenance,77.0,Lawka plaska,3,9,62.5
+2026-10-28,maintenance,77.7,Wyciskanie hantli skos dodatni,1,10,25.0
+2026-10-28,maintenance,77.7,Wyciskanie hantli skos dodatni,2,10,25.0
+2026-10-28,maintenance,77.7,Wyciskanie hantli skos dodatni,3,8,25.0
 2026-10-25,maintenance,77.0,Sciaganie wyciagu do klatki,1,11,55.0
 2026-10-25,maintenance,77.0,Sciaganie wyciagu do klatki,2,10,55.0
 2026-10-25,maintenance,77.0,Sciaganie wyciagu do klatki,3,9,55.0
@@ -15,3 +19,25 @@
 2026-10-25,maintenance,77.0,Biceps hantle siedzac,1,7,12.5
 2026-10-25,maintenance,77.0,Biceps hantle siedzac,2,9,12.5
 2026-10-25,maintenance,77.0,Biceps hantle siedzac,3,8,12.5
+2026-10-28,maintenance,77.7,Wyciskanie hantli skos dodatni,1,10,22.0
+2026-10-28,maintenance,77.7,Wyciskanie hantli skos dodatni,2,10,22.0
+2026-10-28,maintenance,77.7,Wyciskanie hantli skos dodatni,3,8,22.0
+2026-10-28,maintenance,77.7,Martwy rumunski,1,10,70.0
+2026-10-28,maintenance,77.7,Martwy rumunski,2,10,70.0
+2026-10-28,maintenance,77.7,Martwy rumunski,3,10,70.0
+2026-10-28,maintenance,77.7,Wyprosty nog na maszynie,1,15,59.0
+2026-10-28,maintenance,77.7,Wyprosty nog na maszynie,2,15,59.0
+2026-10-28,maintenance,77.7,Wznosy bokiem,1,12,10.0
+2026-10-28,maintenance,77.7,Wznosy bokiem,2,12,10.0
+2026-10-28,maintenance,77.7,Wznosy bokiem,3,12,10.0
+2026-10-20,deficit,77.9,Przysiad ze sztanga,1,8,75.0
+2026-10-20,deficit,77.9,Przysiad ze sztanga,2,8,75.0
+2026-10-20,deficit,77.9,Przysiad ze sztanga,3,8,75.0
+2026-10-20,deficit,77.9,Lawka plaska,1,9,62.5
+2026-10-20,deficit,77.9,Lawka plaska,2,8,62.5
+2026-10-20,deficit,77.9,Lawka plaska,3,7,62.5
+2026-10-20,deficit,77.9,Face pull,1,15,55.0
+2026-10-20,deficit,77.9,Face pull,2,15,55.0
+2026-10-20,deficit,77.9,Wznosy bokiem,1,12,10.0
+2026-10-20,deficit,77.9,Wznosy bokiem,2,12,10.0
+2026-10-20,deficit,77.9,Wznosy bokiem,3,11,10.0
