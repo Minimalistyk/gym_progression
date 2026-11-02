@@ -1,15 +1,24 @@
 from pathlib import Path
-
+import datetime as dt
+import matplotlib.pyplot as plt
 import pandas as pd
+
+DIET_COLORS = {
+    "surplus": "green",
+    "maintenance": "blue",
+    "deficit": "red",
+    "unknow": "gray"
+}
 
 #na potrzebny testów
 BASE_DIRECTORY = Path(".")
 WORKOUTS_PATH = BASE_DIRECTORY / "spreadsheets" / "workoutsTEST.csv"
+RAPORTS_PATH = BASE_DIRECTORY / "output"
 # 1. Test zakresu dat (mode: "dates") — maksymalny ciężar roboczy ("weight")
 # Test A: Progres % ciężaru (powinno pokazać: 0%, +4.17%, +8.33%, +16.67%)
 config_weight_pct = {
-    "exercises": ["Lawka plaska", "Wznosy bokiem"],
-    "period": {"mode": "dates", "start_date": "2026-10-01", "end_date": "2026-10-20"},
+    "exercises": ["Lawka plaska", "Wznosy bokiem", "Przysiad ze sztanga"],
+    "period": {"mode": "dates", "start_date": "2026-08-01", "end_date": "2026-10-30"},
     "diet": "unknow",
     "type": "weight progress in %"
 }
@@ -17,15 +26,15 @@ config_weight_pct = {
 # Test B: Zwykła objętość (volume) z ostatnich 3 sesji
 config_volume_raw = {
     "exercises": ["Lawka plaska"],
-    "period": {"mode": "count", "value": 3},
+    "period": {"mode": "count", "value": 10},
     "diet": "unknow",
     "type": "volume"
 }
 
 # Test C: Progres % objętości (volume progress in %)
 config_volume_pct = {
-    "exercises": ["Lawka plaska"],
-    "period": {"mode": "count", "value": 4},
+    "exercises": ["Lawka plaska", "Przysiad ze sztanga"],
+    "period": {"mode": "count", "value": 16},
     "diet": "unknow",
     "type": "volume progress in %"
 }
@@ -33,13 +42,49 @@ config_volume_pct = {
 # Test D: Stosunek ciężaru do masy ciała (weight/bodyweight)
 config_ratio = {
     "exercises": ["Przysiad ze sztanga"],
-    "period": {"mode": "dates", "start_date": "2026-10-01", "end_date": "2026-10-20"},
+    "period": {"mode": "dates", "start_date": "2026-08-01", "end_date": "2026-10-30"},
     "diet": "unknow",
     "type": "weight/bodyweight"
 }
 
-def create_plt(config = None, workouts_path = None):
+def create_plt(config : dict, workouts_path: Path):
     df = get_raw_dataframe(workouts_path)
+    df = transform_data(df, config)
+
+    fig, axies = plt.subplots(figsize=(10,6))
+    for exercise, df_grouped in df.groupby("exercise"):
+        axies.plot(df_grouped["date"], df_grouped["metric_value"], marker="o", label = exercise)
+    axies.grid(True, linestyle="--", alpha=0.5)
+    axies.set_xlabel("Daty")
+    axies.set_ylabel(config["type"])
+
+    timeline = df[["date", "diet"]].drop_duplicates().sort_values("date")
+    timeline["next_date"] = timeline["date"].shift(-1)
+    timeline = timeline.dropna()
+
+
+    diet_added_to_label = []
+    for data_od, data_do, dieta in zip(timeline["date"], timeline["next_date"], timeline["diet"]):
+        diet_color = DIET_COLORS[dieta]
+        if dieta in diet_added_to_label:
+            dieta = None
+        else:
+            diet_added_to_label.append(dieta)
+        axies.axvspan(data_od, data_do, color=diet_color, alpha=0.15, label=dieta, lw=0)
+
+
+
+    axies.legend()
+    fig.autofmt_xdate()
+    timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    metric_name = config["type"].split(" ")[0].replace("/", "_")
+    file_name = f"{timestamp}_{metric_name}.svg"
+    RAPORTS_PATH.mkdir(parents=True, exist_ok=True)
+    path = RAPORTS_PATH / file_name
+    fig.savefig(path)
+    plt.close(fig)
+
+def transform_data(df: pd.DataFrame, config: dict):
     df = get_prepared_dataframe(df)
     df = filter_by_exercise(df,config["exercises"])
     df = filter_by_period(df,config["period"])
@@ -49,8 +94,7 @@ def create_plt(config = None, workouts_path = None):
     df = aggregate_metrics(df, base_metric)
     is_progres_metric = config["type"].endswith("%")
     df = calculate_progress(df, is_progres_metric)
-    print(df)
-    #print(df[["date", "diet", "exercise", "metric_value"]])
+    return df
 
 def get_prepared_dataframe(df=None):
     df = df.sort_values("date", ascending=True, ignore_index = True)#mozna wprowadzac daty w roznej kolejnosci, weic je sortujemy
@@ -108,8 +152,6 @@ def calculate_progress(df, flag):
     df["metric_value"] = (df["metric_value"] - day0)/day0*100
     return df
 
-
-
 def get_raw_dataframe(workouts_path = None):
     df = pd.read_csv(workouts_path, parse_dates=['date'])#ustawiam aby daty byly type(date) a nie string
     return df
@@ -117,12 +159,13 @@ def get_raw_dataframe(workouts_path = None):
 if __name__ == "__main__":
     print("--- TEST 1: ---")
     create_plt(config=config_weight_pct, workouts_path=WORKOUTS_PATH)
-
+    input("Oczekiwanie: ")
     print("\n--- TEST 2:---")
     create_plt(config=config_volume_raw, workouts_path=WORKOUTS_PATH)
-
+    input("Oczekiwanie: ")
     print("\n--- TEST 3:---")
     create_plt(config=config_volume_pct, workouts_path=WORKOUTS_PATH)
-
+    input("Oczekiwanie: ")
     print("\n--- TEST 4:---")
     create_plt(config=config_ratio, workouts_path=WORKOUTS_PATH)
+    input("Oczekiwanie: ")
