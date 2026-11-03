@@ -14,7 +14,7 @@ DIET_COLORS = {
 #na potrzebny testów
 BASE_DIRECTORY = Path(".")
 WORKOUTS_PATH = BASE_DIRECTORY / "spreadsheets" / "workoutsTEST.csv"
-REPORTS_PATH = BASE_DIRECTORY / "output"
+REPORTS_PATH = BASE_DIRECTORY / "reports"
 # 1. Test zakresu dat (mode: "dates") — maksymalny ciężar roboczy ("weight")
 # Test A: Progres % ciężaru (powinno pokazać: 0%, +4.17%, +8.33%, +16.67%)
 config_weight_pct = {
@@ -52,12 +52,17 @@ def create_plt(config: dict, workouts_path: Path):
     df = get_raw_dataframe(workouts_path)
     df = transform_data(df, config)
 
+    if df.empty:
+        print("[WARNING] for those parameters dataframe is empty! Plot creating is aborted!")
+        return
+
     fig, ax = plt.subplots(figsize=(10,6))
     for exercise, df_grouped in df.groupby("exercise"):
         ax.plot(df_grouped["date"], df_grouped["metric_value"], marker="o", label = exercise)
     ax.grid(True, linestyle="--", alpha=0.5)
-    ax.set_xlabel("Daty")
+    ax.set_xlabel("Date")
     ax.set_ylabel(config["type"])
+    #dodaj potem slownik z type aby to jakos lepiej wygladalo np nie weight a weight [KG]
 
     timeline = df[["date", "diet"]].drop_duplicates().sort_values("date")
     timeline["next_date"] = timeline["date"].shift(-1)
