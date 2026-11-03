@@ -1,5 +1,6 @@
-from pathlib import Path
 import datetime as dt
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -7,19 +8,19 @@ DIET_COLORS = {
     "surplus": "green",
     "maintenance": "blue",
     "deficit": "red",
-    "unknow": "gray"
+    "unknown": "gray"
 }
 
 #na potrzebny testów
 BASE_DIRECTORY = Path(".")
 WORKOUTS_PATH = BASE_DIRECTORY / "spreadsheets" / "workoutsTEST.csv"
-RAPORTS_PATH = BASE_DIRECTORY / "output"
+REPORTS_PATH = BASE_DIRECTORY / "output"
 # 1. Test zakresu dat (mode: "dates") — maksymalny ciężar roboczy ("weight")
 # Test A: Progres % ciężaru (powinno pokazać: 0%, +4.17%, +8.33%, +16.67%)
 config_weight_pct = {
     "exercises": ["Lawka plaska", "Wznosy bokiem", "Przysiad ze sztanga"],
     "period": {"mode": "dates", "start_date": "2026-08-01", "end_date": "2026-10-30"},
-    "diet": "unknow",
+    "diet": "deficit",
     "type": "weight progress in %"
 }
 
@@ -27,7 +28,7 @@ config_weight_pct = {
 config_volume_raw = {
     "exercises": ["Lawka plaska"],
     "period": {"mode": "count", "value": 10},
-    "diet": "unknow",
+    "diet": "all",
     "type": "volume"
 }
 
@@ -35,7 +36,7 @@ config_volume_raw = {
 config_volume_pct = {
     "exercises": ["Lawka plaska", "Przysiad ze sztanga"],
     "period": {"mode": "count", "value": 16},
-    "diet": "unknow",
+    "diet": "all",
     "type": "volume progress in %"
 }
 
@@ -43,20 +44,20 @@ config_volume_pct = {
 config_ratio = {
     "exercises": ["Przysiad ze sztanga"],
     "period": {"mode": "dates", "start_date": "2026-08-01", "end_date": "2026-10-30"},
-    "diet": "unknow",
+    "diet": "all",
     "type": "weight/bodyweight"
 }
 
-def create_plt(config : dict, workouts_path: Path):
+def create_plt(config: dict, workouts_path: Path):
     df = get_raw_dataframe(workouts_path)
     df = transform_data(df, config)
 
-    fig, axies = plt.subplots(figsize=(10,6))
+    fig, ax = plt.subplots(figsize=(10,6))
     for exercise, df_grouped in df.groupby("exercise"):
-        axies.plot(df_grouped["date"], df_grouped["metric_value"], marker="o", label = exercise)
-    axies.grid(True, linestyle="--", alpha=0.5)
-    axies.set_xlabel("Daty")
-    axies.set_ylabel(config["type"])
+        ax.plot(df_grouped["date"], df_grouped["metric_value"], marker="o", label = exercise)
+    ax.grid(True, linestyle="--", alpha=0.5)
+    ax.set_xlabel("Daty")
+    ax.set_ylabel(config["type"])
 
     timeline = df[["date", "diet"]].drop_duplicates().sort_values("date")
     timeline["next_date"] = timeline["date"].shift(-1)
@@ -64,25 +65,26 @@ def create_plt(config : dict, workouts_path: Path):
 
 
     diet_added_to_label = []
-    for data_od, data_do, dieta in zip(timeline["date"], timeline["next_date"], timeline["diet"]):
-        diet_color = DIET_COLORS[dieta]
-        if dieta in diet_added_to_label:
-            dieta = None
+    for diet_from, diet_to, diet in zip(timeline["date"], timeline["next_date"], timeline["diet"]):
+        diet_color = DIET_COLORS[diet]
+        if diet in diet_added_to_label:#dzieki temu na legendzie dodajemy maks raz kazdy typ diety
+            diet = None
         else:
-            diet_added_to_label.append(dieta)
-        axies.axvspan(data_od, data_do, color=diet_color, alpha=0.15, label=dieta, lw=0)
+            diet_added_to_label.append(diet)
+        ax.axvspan(diet_from, diet_to, color=diet_color, alpha=0.15, label=diet, lw=0)
 
 
 
-    axies.legend()
+    ax.legend()
     fig.autofmt_xdate()
     timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     metric_name = config["type"].split(" ")[0].replace("/", "_")
     file_name = f"{timestamp}_{metric_name}.svg"
-    RAPORTS_PATH.mkdir(parents=True, exist_ok=True)
-    path = RAPORTS_PATH / file_name
+    REPORTS_PATH.mkdir(parents=True, exist_ok=True)
+    path = REPORTS_PATH / file_name
     fig.savefig(path)
     plt.close(fig)
+    print(f"Plot {path} created successfully")
 
 def transform_data(df: pd.DataFrame, config: dict):
     df = get_prepared_dataframe(df)
@@ -96,15 +98,15 @@ def transform_data(df: pd.DataFrame, config: dict):
     df = calculate_progress(df, is_progres_metric)
     return df
 
-def get_prepared_dataframe(df=None):
+def get_prepared_dataframe(df: pd.DataFrame):
     df = df.sort_values("date", ascending=True, ignore_index = True)#mozna wprowadzac daty w roznej kolejnosci, weic je sortujemy
     df["bodyweight"] = df["bodyweight"].ffill().bfill()#uzupelniamy puste miejsca z waga
     return df
 
-def filter_by_exercise(df=None, exericses=None):
-    return df[df["exercise"].isin(exericses)]
+def filter_by_exercise(df: pd.DataFrame, exercises: list):
+    return df[df["exercise"].isin(exercises)]
 
-def filter_by_period(df=None, period=None):
+def filter_by_period(df: pd.DataFrame, period: dict):
     if period["mode"] == "dates":
         start = pd.to_datetime(period["start_date"])
         end = pd.to_datetime(period["end_date"])
@@ -114,12 +116,12 @@ def filter_by_period(df=None, period=None):
         target_dates = df["date"].drop_duplicates().sort_values().tail(n)
         return df[df["date"].isin(target_dates)]
     
-def filter_by_diet(df=None, diet=None):
-    if diet == "unknow":
+def filter_by_diet(df: pd.DataFrame, diet: str):
+    if diet == "all":
         return df
     return df[df["diet"] == diet]
 
-def add_metric_column(df=None, type=None):
+def add_metric_column(df: pd.DataFrame, type: str):
     METRIC_STRAT = {
         "weight": lambda d: d["weight"],
         "weight/bodyweight": lambda d: d["weight"]/d["bodyweight"],
@@ -131,7 +133,7 @@ def add_metric_column(df=None, type=None):
     df["metric_value"] = strat(df)
     return df
 
-def aggregate_metrics(df=None, type=None):
+def aggregate_metrics(df: pd.DataFrame, type: str):
     METRIC_STRAT = {
             "weight": lambda d: d.groupby(["date", "exercise", "diet"])["metric_value"].max().reset_index(),
             "weight/bodyweight": lambda d: d.groupby(["date", "exercise", "diet"])["metric_value"].max().reset_index(),
@@ -143,7 +145,7 @@ def aggregate_metrics(df=None, type=None):
     df = strat(df)
     return df
 
-def calculate_progress(df, flag):
+def calculate_progress(df: pd.DataFrame, flag: bool):
     if not flag: #jesli nie konczy sie "%" to znaczy ze nie chcemy edytowac metryki na procenty
         return df
     #tworymy kolumne z metryka z dnia zerowego dla kazdego cwiczenia
@@ -152,7 +154,7 @@ def calculate_progress(df, flag):
     df["metric_value"] = (df["metric_value"] - day0)/day0*100
     return df
 
-def get_raw_dataframe(workouts_path = None):
+def get_raw_dataframe(workouts_path: Path):
     df = pd.read_csv(workouts_path, parse_dates=['date'])#ustawiam aby daty byly type(date) a nie string
     return df
 

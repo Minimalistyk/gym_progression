@@ -1,4 +1,5 @@
 import datetime as dt
+from pathlib import Path
 
 TODAY_DATE = dt.date.today()
 
@@ -29,7 +30,7 @@ EXERCISES_LIST = [
     "Suwnica na nogi",
 ]
 
-def show_screen(date = TODAY_DATE, diet = "unknow", bodyweight = None, exercises_data = None):
+def show_screen(date: dt.date, diet: str, bodyweight: str, exercises_data: dict):
     width = 30
     print("SUMMARY".center(width, "="))
     print(f"Date: {date} \nDiet type: {diet}\nBodyweight: {bodyweight}")
@@ -42,10 +43,10 @@ def show_screen(date = TODAY_DATE, diet = "unknow", bodyweight = None, exercises
 
 def get_data():
     while True:
-        date = get_workout_date()
-        diet = get_recent_diet()
-        bodyweight = get_bodyweight()
-        exercises = get_exercises_list()
+        date = get_workout_date("Input workout date (empyt=today, DD.MM.YYYY):")
+        diet = get_recent_diet("What is your recent diet tipe: ")
+        bodyweight = get_bodyweight("What is your today's bodyweight (empty = skip): ")
+        exercises = get_exercises_list("What exercises do you want to entry (all or numbers with spaces)")
         exercises_data = get_exercises_data(exercises)
         show_screen(date, diet, bodyweight, exercises_data)
         while True:
@@ -57,37 +58,38 @@ def get_data():
     
     return {"date": date, "diet": diet,"bodyweight": bodyweight ,"exercises": exercises_data}
 
-def get_workout_date():
+def get_workout_date(message: str):
     while True:
         try:
-            date_input = input("Podaj date (DD-MM-YYYY/pusty=dzis): ")
+            date_input = input(message)
             if not date_input:
                 date_input = TODAY_DATE
                 return date_input
-            date_input = dt.datetime.strptime(date_input, "%d-%m-%Y").date()
+            date_input = dt.datetime.strptime(date_input, "%d.%m.%Y").date()
             return date_input
         except ValueError:
             print("Invalid date!")
 
-def get_recent_diet():
+def get_recent_diet(message: str):
     diet_translation = {
                         "s": "surplus",
                         "m": "maintenance",
                         "d": "deficit",
-                        "u": "unknow"
+                        "u": "unknown",
+                        "a": "all"
                         }
     while True:
-        diet_input = input("Input your today's diet type. \nsurplus/maintenance/deficit/unknow: ")
+        diet_input = input(f"{message} \nsurplus/maintenance/deficit/unknown: ")
         #sprawdzamy czy zostalo cokowiek podane i sprawdzamy ierwsza litere
         if not diet_input:
-            return diet_translation["u"]
-        if diet_input[0].lower() in ["s", "m", "d", "u"]:
+            return diet_translation["a"]
+        if diet_input[0].lower() in ["s", "m", "d", "u", "a"]:
             return diet_translation[diet_input[0].lower()]
 
-def get_bodyweight():
+def get_bodyweight(message: str):
     while True:
         try:
-            input_bodyweight = input("Input bodyweight kg: ").replace(",",".")
+            input_bodyweight = input(message).replace(",",".")
             if input_bodyweight:
                 bodyweight = abs(float(input_bodyweight))
             else: 
@@ -97,44 +99,47 @@ def get_bodyweight():
             print("Number is expected")
     return bodyweight
 
-def get_exercises_list():
+def get_exercises_list(message: str):
     while True:
         today_exercises_list = [] #jakby error byl w locie to tworzymy pusta liste na poczatku
         for i, item in enumerate(EXERCISES_LIST):
             if i%3==0:
-                print("\n")
+                print()
             if i>=9:
                 print(f"{i+1}. {item:<30}", end="   ")
             else:#z nieznanego mi powodu bez tego printuje sie to troche nie równo xD
                 print(f"{i+1}. {item:<31}", end="   ")
         try:
-            today_exercises_input = input("\n\nPodaj numer/y ćwiczeń: ").split() #lista stringów z numerami cwiczen
-            for exercise in today_exercises_input:
+            today_exercises_input = input(f"\n\n{message}") #lista stringów z numerami cwiczen
+            if today_exercises_input == "all" or not today_exercises_input:
+                return EXERCISES_LIST
+            today_exercises = today_exercises_input.split()
+            for exercise in today_exercises:
                 today_exercises_list.append(EXERCISES_LIST[int(exercise)-1])
             if today_exercises_list: #w razie pustej listy nas to ratuje
                 return today_exercises_list
         except (ValueError, IndexError):
             print("Poza przedziałem!")
 
-def get_exercises_data(exercises_list = None):
+def get_exercises_data(exercises_list: list):
     exercises_data = {}
     for item in exercises_list:
         while True:
             try:
-                print(f"Ćwiczenie: {item}")
-                raw_reps = input("Podaj l. powtórzeń (serie odzielone spacją): ").split()
+                print(f"Exercise: {item}")
+                raw_reps = input("Input all reps separated by space: ").split()
                 if not raw_reps:#musi byc minimum 1 seria
                     continue
                 reps = [abs(int(rep)) for rep in raw_reps]  # castujemy liste na inty i lapiemy jesli ktos podal nieliczby
-                weight = abs(float(input("Podaj ciężar: ").replace(",",".")))
+                weight = abs(float(input("Input weight: ").replace(",",".")))
                 temp_exercise_dict = {"reps" : reps, "weight": weight} 
                 break
             except ValueError:
-                print("Podawaj liczby!")
+                print("Invalid format!\nExample:\n  resp: 10 10 9\n weight:65,5")
         exercises_data[item] = temp_exercise_dict
     return exercises_data
 
-def save_data_to_csv(path = None, my_data = None):
+def save_data_to_csv(path: Path, my_data: dict):
     if not path:
         print("save_data_to_csv nie otrzymal sciezki")
         return

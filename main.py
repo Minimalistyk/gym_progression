@@ -39,40 +39,35 @@ def input_data():
     save_data_to_csv(path = WORKOUTS_PATH, my_data = workout_data)
 
 def create_plot_config():
-    #tutaj pytamy uzytkownika o parametry wykresu i nastepnie wysylamy je do 
-    #zakres dat/liczba ostanich treningów
-    #lista ćwiczeń
-    #typ: ciężar w rep/ ciezar do masy ciala w rep/ progres % ciezaru wzgledem poprzedniej serii/ objetosc cwiczenia/ progress % objetosci cwiczenia
-
-    exercises = get_exercises_list()
-    diet = get_recent_diet()
+    exercises = get_exercises_list("Input exercise numbers for plot (or all): ")
+    diet = get_recent_diet("Input diet you are interested in (or all)")
 
     while True:
-        choice = input("Wybierz zakres (data/treningi): ")
+        choice = input("Choose range (date/workouts): ")
 
         if not choice:
             continue
         try:
             if choice[0].lower() == "d":
-                date_input = input("Podaj date poczatkowa (DD-MM-YYYY): ")
-                start_date = dt.datetime.strptime(date_input, "%d-%m-%Y").date()
-                date_input = input("Podaj date koncowa (DD-MM-YYYY): ")
-                end_date = dt.datetime.strptime(date_input, "%d-%m-%Y").date()
+                date_input = input("Input first date (DD.MM.YYYY): ")
+                start_date = dt.datetime.strptime(date_input, "%d.%m.%Y").date()
+                date_input = input("Input last date (DD.MM.YYYY): ")
+                end_date = dt.datetime.strptime(date_input, "%d.%m.%Y").date()
                 period = {"mode": "dates", "start_date": start_date, "end_date":end_date}
-            elif choice[0].lower() == "t":
+            elif choice[0].lower() == "w":
                 workout_count = int(input("Input how many workouts back from now you would like to see on a plot: "))
                 period = {"mode": "count", "value": workout_count}
             else:
                 continue
             break
         except ValueError:
-            print("Invalid input")
+            print("Invalid input, d or date is for range of dates, w or workouts is for last x workouts")
 
     while True:
         try:
             for i, item in enumerate(PLOT_TYPE):
                 print(f"{i+1}. {item}")
-            plot_type = PLOT_TYPE[int(input("Podaj typ wykresu: "))-1]
+            plot_type = PLOT_TYPE[int(input("Chose your metric: "))-1]
             break
         except (ValueError, IndexError):
             pass
