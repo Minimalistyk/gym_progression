@@ -4,7 +4,13 @@ from pathlib import Path
 
 #moje pozostałe pliki
 from data_eng import create_plt
-from ingest import get_data, get_exercises_list, get_recent_diet, save_data_to_csv
+from ingest import (
+    get_data,
+    get_exercises_list,
+    get_recent_diet,
+    save_data_to_csv,
+    show_screen,
+)
 
 #constanty
 BASE_DIRECTORY = Path(".")
@@ -39,39 +45,47 @@ def input_data():
     save_data_to_csv(path = WORKOUTS_PATH, my_data = workout_data)
 
 def create_plot_config():
-    exercises = get_exercises_list("Input exercise numbers for plot (or all): ")
-    diet = get_recent_diet("Input diet you are interested in (or all)")
-
     while True:
-        choice = input("Choose range (date/workouts): ")
+        exercises = get_exercises_list("Input exercise numbers for plot (or all): ")
+        diet = get_recent_diet("Input diet you are interested in (or all)")
 
-        if not choice:
-            continue
-        try:
-            if choice[0].lower() == "d":
-                date_input = input("Input first date (DD.MM.YYYY): ")
-                start_date = dt.datetime.strptime(date_input, "%d.%m.%Y").date()
-                date_input = input("Input last date (DD.MM.YYYY): ")
-                end_date = dt.datetime.strptime(date_input, "%d.%m.%Y").date()
-                period = {"mode": "dates", "start_date": start_date, "end_date":end_date}
-            elif choice[0].lower() == "w":
-                workout_count = int(input("Input how many workouts back from now you would like to see on a plot: "))
-                period = {"mode": "count", "value": workout_count}
-            else:
+        while True:
+            choice = input("Choose range (date/workouts): ")
+
+            if not choice:
                 continue
-            break
-        except ValueError:
-            print("Invalid input, d or date is for range of dates, w or workouts is for last x workouts")
+            try:
+                if choice[0].lower() == "d":
+                    date_input = input("Input first date (DD.MM.YYYY): ")
+                    start_date = dt.datetime.strptime(date_input, "%d.%m.%Y").date()
+                    date_input = input("Input last date (DD.MM.YYYY): ")
+                    end_date = dt.datetime.strptime(date_input, "%d.%m.%Y").date()
+                    period = {"mode": "dates", "start_date": start_date, "end_date":end_date}
+                elif choice[0].lower() == "w":
+                    workout_count = int(input("Input how many workouts back from now you would like to see on a plot: "))
+                    period = {"mode": "count", "value": workout_count}
+                else:
+                    continue
+                break
+            except ValueError:
+                print("Invalid input, d or date is for range of dates, w or workouts is for last x workouts")
 
-    while True:
-        try:
-            for i, item in enumerate(PLOT_TYPE):
-                print(f"{i+1}. {item}")
-            plot_type = PLOT_TYPE[int(input("Chose your metric: "))-1]
+        while True:
+            try:
+                for i, item in enumerate(PLOT_TYPE):
+                    print(f"{i+1}. {item}")
+                plot_type = PLOT_TYPE[int(input("Chose your metric: "))-1]
+                break
+            except (ValueError, IndexError):
+                pass
+        config = {"period":period, "diet": diet, "exercises": exercises, "type":plot_type}
+        #show_screen(config) #<--- PIERWSZE SHOW SCREEN MUSI PRZYJMOWAC CONFIGI!!!
+        while True:
+            confirmation = input("Confirm? (y/n): ").lower()
+            if confirmation and confirmation[0] in ["y","n"]:
+                break
+        if confirmation[0] == "y":
             break
-        except (ValueError, IndexError):
-            pass
-    config = {"period":period, "diet": diet, "exercises": exercises, "type":plot_type}
     create_plt(config, WORKOUTS_PATH)
 
 def create_workout():
