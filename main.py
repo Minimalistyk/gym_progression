@@ -1,8 +1,8 @@
 import datetime as dt
 import sys
-from pathlib import Path
 
 #moje pozostałe pliki
+from constants import PLOT_TYPE, WORKOUTS_PATH
 from data_eng import create_plt
 from ingest import (
     get_data,
@@ -12,12 +12,7 @@ from ingest import (
     show_screen,
 )
 
-#constanty
-BASE_DIRECTORY = Path(".")
-WORKOUTS_PATH = BASE_DIRECTORY / "spreadsheets" / "workouts.csv"
-PLOT_TYPE = ["weight", "weight/bodyweight", "volume", "weight progress in %", "weight/bodyweight progress in %", "volume progress in %"
-]
-    
+
 def main_menu():
     #menu_actions zawiera krotki z funkcja oraz tekstem w menu
     menu_actions = {1:(input_data, "Input data"), 2:(create_plot_config, "Create plot"), 3:(create_workout, "Create workout"), 4:(end_program, "Exit")}
