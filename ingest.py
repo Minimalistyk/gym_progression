@@ -1,54 +1,38 @@
 import datetime as dt
 from pathlib import Path
 
-TODAY_DATE = dt.date.today()
+from constants import EXERCISES_LIST, TODAY_DATE
 
-EXERCISES_LIST = [
-    "Przysiad ze sztanga",
-    "Lawka plaska",
-    "Martwy ciag",
-    "Podciaganie",
-    "Face pull",
-    "Wznosy bokiem",
-    "Plank",
-    "Pompki",
-    "Przysiad bulgarski",
-    "Sciaganie wyciagu do klatki",
-    "Wioslowanie hantlem",
-    "OHP",
-    "Rozpietki",
-    "Biceps hantle siedzac",
-    "Wyciskanie hantli skos dodatni",
-    "Martwy rumunski",
-    "Podciaganie australijskie",
-    "Wyprosty nog na maszynie",
-    "Lydki na palcach stojac",
-    "Lydki na palcach siedzac",
-    "Uginanie nog",
-    "Gniecenie arbuza",
-    "Odgniatanie arbuza",
-    "Suwnica na nogi",
-]
 
-def show_screen(date: dt.date, diet: str, bodyweight: str, exercises_data: dict):
+def show_screen(config: dict):
     width = 30
     print("SUMMARY".center(width, "="))
-    print(f"Date: {date} \nDiet type: {diet}\nBodyweight: {bodyweight}")
-    for exercise, details in exercises_data.items():
-        print(f"{exercise}:")
-        for metric, value in details.items():
-            formated_value = ", ".join(str(r) for r in value) if isinstance(value, list) else f"{value}kg"
-            print(f"    {metric:<7}: {formated_value}")
+    if config["conf_type"] == "input":
+        print(f"Date: {config["start_date"]} \nDiet type: {config["diet"]}\nBodyweight: {config["bodyweight"]}")
+        
+        for exercise, details in config["exercises_data"].items():
+            print(f"{exercise}:")
+            for metric, value in details.items():
+                formated_value = ", ".join(str(r) for r in value) if isinstance(value, list) else f"{value}kg"
+                print(f"    {metric:<7}: {formated_value}")
+    
+    elif config["conf_type"] == "plot":
+        exercises = "\n"+ "   \n".join(config["exercises"])
+        if config["period"]["mode"] == "count":
+            print(f"Workouts: {config["period"]["value"]}\nDiet type: {config["diet"]}\nMetric: {config["type"]}\nExercises: {exercises}")
+        elif config["period"]["mode"] == "dates":
+            print(f"Dates: {config["period"]["start_date"]} - {config["period"]["end_date"]}\nDiet type: {config["diet"]}\nMetric: {config["type"]}\nExercises: {exercises}")
     print("="*width)
 
 def get_data():
     while True:
-        date = get_workout_date("Input workout date (empyt=today, DD.MM.YYYY):")
-        diet = get_recent_diet("What is your recent diet tipe: ")
+        date = get_workout_date("Input workout date (empyt=today, DD.MM.YYYY): ")
+        diet = get_recent_diet("What is your recent diet type: ")
         bodyweight = get_bodyweight("What is your today's bodyweight (empty = skip): ")
-        exercises = get_exercises_list("What exercises do you want to entry (all or numbers with spaces)")
+        exercises = get_exercises_list("What exercises do you want to entry (all or numbers with spaces): ")
         exercises_data = get_exercises_data(exercises)
-        show_screen(date, diet, bodyweight, exercises_data)
+
+        show_screen({"conf_type": "input", "start_date": date, "diet": diet, "bodyweight": bodyweight, "exercises_data": exercises_data})
         while True:
             confirmation = input("Confirm? (y/n): ").lower()
             if confirmation and confirmation[0] in ["y","n"]:
@@ -56,7 +40,7 @@ def get_data():
         if confirmation[0] == "y":
             break
     
-    return {"date": date, "diet": diet,"bodyweight": bodyweight ,"exercises": exercises_data}
+    return {"conf_type": "input", "start_date": date, "diet": diet, "bodyweight": bodyweight, "exercises": exercises_data}
 
 def get_workout_date(message: str):
     while True:
@@ -146,5 +130,5 @@ def save_data_to_csv(path: Path, my_data: dict):
     with open(path, mode="a", encoding="utf-8") as f:
         for exercise_name, details in my_data["exercises"].items():
             for set_number, rep in enumerate(details["reps"]):
-                line = f"{my_data["date"]},{my_data["diet"]},{my_data["bodyweight"]},{exercise_name},{int(set_number)+1},{int(rep)},{details["weight"]}\n"
+                line = f"{my_data["start_date"]},{my_data["diet"]},{my_data["bodyweight"]},{exercise_name},{int(set_number)+1},{int(rep)},{details["weight"]}\n"
                 f.write(line)

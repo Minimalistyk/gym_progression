@@ -4,17 +4,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 
-DIET_COLORS = {
-    "surplus": "green",
-    "maintenance": "blue",
-    "deficit": "red",
-    "unknown": "gray"
-}
+from constants import DIET_COLORS, REPORTS_DIR_PATH, WORKOUTS_PATH
 
-#na potrzebny testów
-BASE_DIRECTORY = Path(".")
-WORKOUTS_PATH = BASE_DIRECTORY / "spreadsheets" / "workoutsTEST.csv"
-REPORTS_PATH = BASE_DIRECTORY / "reports"
 # 1. Test zakresu dat (mode: "dates") — maksymalny ciężar roboczy ("weight")
 # Test A: Progres % ciężaru (powinno pokazać: 0%, +4.17%, +8.33%, +16.67%)
 config_weight_pct = {
@@ -85,8 +76,8 @@ def create_plt(config: dict, workouts_path: Path):
     timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     metric_name = config["type"].split(" ")[0].replace("/", "_")
     file_name = f"{timestamp}_{metric_name}.svg"
-    REPORTS_PATH.mkdir(parents=True, exist_ok=True)
-    path = REPORTS_PATH / file_name
+    REPORTS_DIR_PATH.mkdir(parents=True, exist_ok=True)
+    path = REPORTS_DIR_PATH / file_name
     fig.savefig(path)
     plt.close(fig)
     print(f"Plot {path} created successfully")

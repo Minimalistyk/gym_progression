@@ -6,7 +6,7 @@ TODAY_DATE = dt.date.today()
 
 #sciezki
 BASE_DIRECTORY = Path(".")
-WORKOUTS_PATH = BASE_DIRECTORY / "spreadsheets" / "workoutsTEST.csv"
+WORKOUTS_PATH = BASE_DIRECTORY / "spreadsheets" / "workouts.csv"
 REPORTS_DIR_PATH = BASE_DIRECTORY / "reports"
 
 #listy

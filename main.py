@@ -73,8 +73,8 @@ def create_plot_config():
                 break
             except (ValueError, IndexError):
                 pass
-        config = {"period":period, "diet": diet, "exercises": exercises, "type":plot_type}
-        #show_screen(config) #<--- PIERWSZE SHOW SCREEN MUSI PRZYJMOWAC CONFIGI!!!
+        config = {"conf_type": "plot", "period": period, "diet": diet, "exercises": exercises, "type": plot_type}
+        show_screen(config)
         while True:
             confirmation = input("Confirm? (y/n): ").lower()
             if confirmation and confirmation[0] in ["y","n"]:
